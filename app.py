@@ -1,10 +1,22 @@
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate,MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.messages import HumanMessage, SystemMessage
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 load_dotenv()
+
+if 'store' not in st.session_state:
+    st.session_state.store = {}
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = 'Chat_' + datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+
+config={"configurable":{"session_id":st.session_state.session_id}}
 
 if os.getenv("LANGCHAIN_API_KEY"):
     os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
@@ -17,19 +29,27 @@ if os.getenv("GROQ_KEY"):
 prompt=ChatPromptTemplate.from_messages(
     [
         ("system","You are {character} and act like it. Say something famous that {character} says and then answer the queries in brief."),
-        ("user","Question:{question}")
+        MessagesPlaceholder(variable_name="messages")
     ]
 )
 
+def get_session_history(session_id:str)->BaseChatMessageHistory:
+    if session_id not in st.session_state.store:
+        st.session_state.store[session_id]=ChatMessageHistory()
+    return st.session_state.store[session_id]
+
 def generate_response(question,api_key,engine,character):
     llm=ChatGroq(model=engine,api_key=api_key)
-    output_parser=StrOutputParser()
-    chain=prompt|llm|output_parser
-    if character:
-        answer=chain.invoke({'question':question,'character':character})
-    else:
-        answer=chain.invoke({'question':question,'character':"A helpful chat assisstant"})
+    chain=prompt|llm
+    with_message_hist=RunnableWithMessageHistory(
+        chain,
+        get_session_history,
+        input_messages_key="messages"
+    )
+    answer=with_message_hist.invoke({'messages':[HumanMessage(content=question)],'character':character},config=config).content
     return answer
+
+
 
 st.title("Quirky chatbot")
 
@@ -38,8 +58,13 @@ st.sidebar.title("Settings")
 
 ## Select the model
 engine=st.sidebar.selectbox("Select model",["gemma2-9b-it","llama-3.3-70b-versatile"])
-character=st.sidebar.selectbox("Select my character",["Michael Scott from The Office","Sheldon from Big Bang Theory","Phoebe from FRIENDS","Thanos from The Avengers"])
+character_drop=st.sidebar.selectbox("Select my character",["Michael Scott from The Office","Sheldon from Big Bang Theory","Phoebe from FRIENDS","Thanos from The Avengers"])
+character_text=st.sidebar.text_input("Or enter your own character/person",placeholder="Ex: Tony Stark from Iron Man")
 
+if character_text:
+    character = character_text
+else:
+    character = character_drop
 
 ## MAin interface for user input
 st.write("Go ahead and ask any question")
