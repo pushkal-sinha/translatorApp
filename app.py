@@ -11,6 +11,9 @@ if os.getenv("LANGCHAIN_API_KEY"):
     os.environ["LANGCHAIN_TRACING_V2"]="true"
     os.environ["LANGCHAIN_PROJECT"]="GROQ Chatbot"
 
+if os.getenv("GROQ_KEY"):
+    api_key=os.getenv("GROQ_KEY")
+
 prompt=ChatPromptTemplate.from_messages(
     [
         ("system","You are {character} and act like it. Say something famous that {character} says and then answer the queries in brief."),
@@ -32,7 +35,6 @@ st.title("Quirky chatbot")
 
 ## Sidebar for settings
 st.sidebar.title("Settings")
-api_key=st.sidebar.text_input("Enter API Key:",type="password")
 
 ## Select the model
 engine=st.sidebar.selectbox("Select model",["qwen-qwq-32b","gemma2-9b-it","deepseek-r1-distill-llama-70b","llama-3.3-70b-versatile"])
