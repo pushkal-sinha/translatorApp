@@ -37,7 +37,7 @@ st.title("Quirky chatbot")
 st.sidebar.title("Settings")
 
 ## Select the model
-engine=st.sidebar.selectbox("Select model",["qwen-qwq-32b","gemma2-9b-it","deepseek-r1-distill-llama-70b","llama-3.3-70b-versatile"])
+engine=st.sidebar.selectbox("Select model",["gemma2-9b-it","llama-3.3-70b-versatile"])
 character=st.sidebar.selectbox("Select my character",["Michael Scott from The Office","Sheldon from Big Bang Theory","Phoebe from FRIENDS","Thanos from The Avengers"])
 
 
